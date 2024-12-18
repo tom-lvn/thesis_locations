@@ -22,7 +22,7 @@ showtext_auto()
 showtext_opts(dpi = 600)
 
 #LOCATIONS----
-#create a dataframe with addresses
+#create a dataframe with thesis locations
 some_addresses <- tibble::tribble(
   ~name,                  ~addr,
   "Ghent",          "Ghent, Belgium",
