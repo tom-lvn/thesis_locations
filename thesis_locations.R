@@ -15,6 +15,7 @@ library(tibble) #create dfs
 library(tidyr) #reshaping data
 library(marmap) #bathymetry
 library(showtext) #for fonts
+library(ggnewscale) 
 
 #load font for later
 font_add_google("Lato", family = "lato")
@@ -136,18 +137,38 @@ world_proj <- st_transform(world, crs = "+proj=moll")
 bbox_proj <- st_bbox(routes_projected)
 
 #plot lines and points in Mollweide
-ggplot() + 
+ggplot() +  
   geom_sf(data = world_proj, fill = "wheat") + 
   geom_sf(data = routes_projected, alpha = 0.5,color = "red") + 
   geom_sf(data = lat_longs_sf, color = "red", size = 0.7) +
   coord_sf(xlim = c(bbox_proj[1], bbox_proj[3]), ylim = c(bbox_proj[2], bbox_proj[4])) +  # Use a spherical projection like Mollweide
   theme_minimal() +
-  theme(panel.background = element_rect(fill = "lightblue"),
-        panel.ontop = FALSE)
+  theme_minimal() +
+  theme(text = element_text(family = "lato", color = "#22211d"),
+        axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position = "none",
+        panel.grid.major = element_line(color = "white", linewidth = 0.2),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size=16, color="grey20", hjust=1, vjust=-5),
+        plot.caption = element_text(size=10, color="grey70", hjust=0, vjust=4),
+        plot.margin = unit(c(t=0, r=.2, b=0, l=0),"lines"), #added these narrower margins to enlarge maps
+        plot.background = element_rect(fill = "white", color = NA), 
+        panel.background = element_rect(fill = "lightblue"),
+        panel.border = element_blank()) +
+  labs(x = "", 
+       y = NULL, 
+       title = "IMBRSea Cohort 2023 Thesis Locations", 
+       subtitle = "", 
+       caption = "©2024 Tom Leven (https://github.com/tom-lvn)")
 
 #save plot
-ggsave(filename = "location_map_plain_try.jpg", width = 11, height = 6, dpi = 600,
-       device = "jpg")
+ggsave(filename = "location_map_plain.png", width = 11, height = 6, dpi = 600,
+       device = "png")
 
 #WITH TOPOGRAPHY----
 #get topography
@@ -156,7 +177,7 @@ bathy <- getNOAA.bathy(
   lon2 = 180,
   lat1 = -80,
   lat2 = 80,
-  resolution = 7)
+  resolution = 6)
 
 #create xyz object
 #bathymetry
@@ -177,10 +198,10 @@ topo_terra <- as_spatraster(topo_xyz, xycols = c(1:2), crs=4326) %>%
 
 #create basemap with topography
 basemap <- ggplot() + 
-  geom_spatraster(data= bathy_terra,aes(fill=Depth), maxcell = 5000000) +
+  geom_spatraster(data= bathy_terra,aes(fill=Depth), maxcell = 22000000) +
   scale_fill_hypso_c(palette = "colombia_bathy", na.value = NA) +
   new_scale_fill() +
-  geom_spatraster(data = topo_terra, aes(fill = Depth), maxcell = 5000000) +
+  geom_spatraster(data = topo_terra, aes(fill = Depth), maxcell = 22000000) +
   scale_fill_hypso_c(palette = "colombia_hypso", na.value = NA) +
   theme_minimal() + 
   theme(text = element_text(family = "lato", color = "#22211d"),
@@ -213,7 +234,7 @@ basemap +
   coord_sf(xlim = c(bbox_proj[1], bbox_proj[3]), ylim = c(bbox_proj[2], bbox_proj[4]))
 
 #save active plot
-ggsave(filename = "Desktop/Master/Thesis/location_map.png", width = 11, height = 6, dpi = 600,
+ggsave(filename = "location_map.png", width = 11, height = 6, dpi = 600,
        device = "png")
 
 #ONLY EUROPE----
@@ -228,7 +249,7 @@ ggsave(filename = "Desktop/Master/Thesis/location_map.png", width = 11, height =
 
 #downloaded straight from GEBCO, boundary box used is in the file name
 #link: https://download.gebco.net
-bathy_europe <- readGEBCO.bathy("Desktop/Master/Thesis/GEBCO_18_Dec_2024_2f0882d8ee68/gebco_2024_n74.707_s26.543_w-43.2422_e42.5391.nc",
+bathy_europe <- readGEBCO.bathy("../GEBCO_18_Dec_2024_6e7b1e66b34b/gebco_2024_n75.5634_s22.4155_w-39.151_e47.0623.nc",
                                 resolution = 3)
 
 #create xyz object
@@ -297,10 +318,10 @@ routes_sf_tidy_eu <- routes_lines_eu %>%
 #PLOT EUROPE ONLY----
 #create basemap with topography
 basemap_eu <- ggplot() + 
-  geom_spatraster(data= bathy_europe_terra,aes(fill=Depth), maxcell = 5000000) +
+  geom_spatraster(data= bathy_europe_terra,aes(fill=Depth), maxcell = 15000000) +
   scale_fill_hypso_c(palette = "colombia_bathy", na.value = NA) +
   new_scale_fill() +
-  geom_spatraster(data = topo_europe_terra, aes(fill = Depth), maxcell = 5000000) +
+  geom_spatraster(data = topo_europe_terra, aes(fill = Depth), maxcell = 15000000) +
   scale_fill_hypso_c(palette = "colombia_hypso", na.value = NA) +
   theme_minimal() + 
   theme(text = element_text(family = "lato", color = "#22211d"),
@@ -327,12 +348,12 @@ basemap_eu <- ggplot() +
 
 #add lines and points to basemap
 basemap_eu + 
-  geom_sf(data = lat_longs_crop, color = "red") +
+  geom_sf(data = lat_longs_crop[-1,], color = "red") +
   geom_sf(data = routes_sf_tidy_eu, alpha = 0.5,color = "red") +
   coord_sf(crs = st_crs(3035),
-           ylim = c(1600000, 5200000),
-           xlim = c(2600000, 5000000))
+           ylim = c(1450000, 5200000),
+           xlim = c(2600000, 5656000))
 
 #save graphic window
-ggsave(filename = "Desktop/Master/Thesis/location_map_europe.png", width = 5, height = 8, dpi = 600,
+ggsave(filename = "location_map_europe.png", width = 6, height = 8, dpi = 600,
        device = "png")
