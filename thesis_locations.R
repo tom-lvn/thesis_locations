@@ -67,7 +67,9 @@ some_addresses <- tibble::tribble(
   "Hobart",         "Hobart, Australia",
   "Tübingen",       "Tübingen, Germany",
   "Ushuaia",        "Ushuaia, Argentina",
-  "Crete",          "Crete, Greece"
+  "Crete",          "Crete, Greece",
+  "Lisbon",         "Lisbon, Portugal",
+  "Gothenburg",     "Gothenburg, Sweden"
 )
 
 #geocode the addresses
@@ -183,11 +185,11 @@ bathy <- getNOAA.bathy(
 #bathymetry
 bat_xyz <- as.xyz(bathy) %>% 
   rename(Longitude=V1,Latitude=V2,Depth=V3) %>% 
-  filter(Depth < 0)
+  filter(Depth <= 0)
 #topography
 topo_xyz <- as.xyz(bathy) %>% 
   rename(Longitude=V1,Latitude=V2,Depth=V3) %>% 
-  filter(Depth >= 0)
+  filter(Depth > 0)
 
 #GLOBAL TOPOGRAPHY PLOT----
 #convert to terra spatraster
@@ -261,6 +263,34 @@ bat_europe_xyz <- as.xyz(bathy_europe) %>%
 topo_europe_xyz <- as.xyz(bathy_europe) %>% 
   rename(Longitude=V1,Latitude=V2,Depth=V3) %>% 
   filter(Depth > 0)
+#try Copernicus
+library(CopernicusDEM)
+topo_sf <- st_as_sf(topo_europe_xyz, coords = c(1, 2),
+                     crs = st_crs(4326))
+
+topo_proj <- st_transform(topo_sf, crs = "epsg:3035")
+
+sf_rst_ext = fitbitViz::extend_AOI_buffer(dat_gps_tcx = topo_proj,
+                                          buffer_in_meters = 250,
+                                          verbose = TRUE)
+
+#................................................................
+# Download the Copernicus DEM 30m elevation data because it has
+# a better resolution, it takes a bit longer to download because
+# the .tif file size is bigger
+#...............................................................
+
+dem_dir = tempdir()
+
+sfc_obj = sf_rst_ext$sfc_obj |>
+  sf::st_make_valid()
+
+sfc_proj <- st_transform(sf_rst_ext$sfc_obj, crs = 3035)
+
+dem <- aoi_geom_save_tif_matches(sf_or_file =  sfc_proj,
+                                 resolution = 90, crs_value = 3035,
+                                 threads = parallel::detectCores(), 
+                                 verbose = T)
 
 #convert to terra spatraster
 bathy_europe_terra <- as_spatraster(bat_europe_xyz, xycols = c(1:2), crs=4326)
