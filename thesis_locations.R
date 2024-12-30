@@ -24,7 +24,7 @@ showtext_opts(dpi = 600)
 
 #LOCATIONS----
 #create a dataframe with thesis locations
-some_addresses <- tibble::tribble(
+locations <- tibble::tribble(
   ~name,                  ~addr,
   "Ghent",          "Ghent, Belgium",
   "Ostende",        "Ostende, Belgium",
@@ -74,7 +74,7 @@ some_addresses <- tibble::tribble(
 )
 
 #geocode the addresses
-lat_longs <- some_addresses %>%
+lat_longs <- locations %>%
   geocode(addr, method = 'osm', lat = latitude , long = longitude)
 
 #convert to sf
@@ -145,7 +145,6 @@ ggplot() +
   geom_sf(data = routes_projected, alpha = 0.5,color = "red") + 
   geom_sf(data = lat_longs_sf, color = "red", size = 0.7) +
   coord_sf(xlim = c(bbox_proj[1], bbox_proj[3]), ylim = c(bbox_proj[2], bbox_proj[4])) +  # Use a spherical projection like Mollweide
-  theme_minimal() +
   theme_minimal() +
   theme(text = element_text(family = "lato", color = "#22211d"),
         axis.line = element_blank(),
